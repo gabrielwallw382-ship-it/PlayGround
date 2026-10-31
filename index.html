@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#14100d" />
+  <title>COLLAPSE LAB — Destruction Sandbox</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2314100d'/%3E%3Cpath d='M12 46V18h8v20h10v8H12zm24 0V26h8v12h8v8H36z' fill='%23ff6a2c'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js",
+        "three/addons/": "./vendor/jsm/",
+        "cannon-es": "./vendor/cannon-es.js"
+      }
+    }
+  </script>
+</head>
+<body class="prestart">
+  <div id="app">
+    <canvas id="game" aria-label="3D destruction sandbox"></canvas>
+    <div id="flash"></div>
+
+    <div id="hud" aria-hidden="true">
+      <div class="vignette"></div>
+      <div class="scanlines"></div>
+
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark"><span></span><span></span><span></span></div>
+          <div class="brand-copy">
+            <div class="brand-title">COLLAPSE<span>LAB</span></div>
+            <div class="brand-sub">STRUCTURAL DEMOLITION SANDBOX <b>v1.0</b></div>
+          </div>
+        </div>
+        <div class="top-stats">
+          <div class="stat">
+            <span class="stat-label">DESTROYED</span>
+            <span class="stat-value" id="stat-destroyed">0</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">SCORE</span>
+            <span class="stat-value accent" id="stat-score">0</span>
+          </div>
+          <div class="stat perf">
+            <span class="stat-label">FPS</span>
+            <span class="stat-value" id="stat-fps">60</span>
+          </div>
+        </div>
+      </header>
+
+      <aside class="integrity-panel">
+        <div class="panel-head">
+          <span>STRUCTURE INTEGRITY</span>
+          <span class="live-dot"><i></i>LIVE</span>
+        </div>
+        <div id="integrity-list"></div>
+        <div class="panel-foot">
+          <span id="dyn-count">0 dynamic pieces</span>
+          <span id="physics-rate">PHYSICS 60 Hz</span>
+        </div>
+      </aside>
+
+      <div class="crosshair" id="crosshair">
+        <div class="ch-dot"></div>
+        <div class="ch-line ch-t"></div>
+        <div class="ch-line ch-r"></div>
+        <div class="ch-line ch-b"></div>
+        <div class="ch-line ch-l"></div>
+        <div class="ch-ring"></div>
+      </div>
+
+      <div class="hitmarker" id="hitmarker"><i></i><i></i><i></i><i></i></div>
+
+      <div class="toast" id="toast"></div>
+
+      <div class="action-hint" id="action-hint">
+        <span class="key">LMB</span><span id="action-hint-text">PLACE BLOCK</span>
+      </div>
+
+      <div class="bottom-area">
+        <div class="hotbar" id="hotbar" role="toolbar" aria-label="Tools"></div>
+        <div class="hotbar-help">
+          <span><b>1–7</b> SELECT</span>
+          <span><b>WHEEL</b> CYCLE</span>
+          <span><b>LMB</b> USE</span>
+          <span><b>RMB</b> RECYCLE</span>
+          <span><b>R</b> REBUILD</span>
+          <span><b>H</b> HELP</span>
+        </div>
+      </div>
+
+      <div class="status-chip" id="status-chip">
+        <span class="status-icon">◈</span>
+        <span id="status-text">SANDBOX READY</span>
+      </div>
+
+      <div class="mobile-controls" id="mobile-controls">
+        <div class="joy" id="joy"><div class="joy-ring"></div><div class="joy-knob" id="joy-knob"></div></div>
+        <div class="mobile-actions">
+          <button class="m-btn m-jump" id="m-jump">JUMP</button>
+          <button class="m-btn m-alt" id="m-alt">BREAK</button>
+          <button class="m-btn m-use" id="m-use">USE</button>
+        </div>
+        <button class="m-btn m-cycle" id="m-cycle">NEXT TOOL</button>
+        <button class="m-btn m-reset" id="m-reset">REBUILD</button>
+      </div>
+    </div>
+
+    <div id="overlay" class="overlay">
+      <div class="overlay-bg"></div>
+      <div class="start-card">
+        <div class="eyebrow"><span class="pulse-dot"></span> REAL-TIME STRUCTURAL PHYSICS</div>
+        <h1 class="logo">COLLAPSE<span>LAB</span></h1>
+        <p class="tagline">Build it. Break it. Watch gravity take the blame.</p>
+
+        <div class="brief">
+          <div class="brief-item">
+            <span class="brief-num">01</span>
+            <div><b>BUILD</b><p>Snap concrete, brick, glass, timber and steel onto any surface.</p></div>
+          </div>
+          <div class="brief-item">
+            <span class="brief-num">02</span>
+            <div><b>BREAK</b><p>Swing the sledge or fire a rocket into load-bearing walls.</p></div>
+          </div>
+          <div class="brief-item">
+            <span class="brief-num">03</span>
+            <div><b>COLLAPSE</b><p>Cut the supports and the whole structure loses its mind — realistically.</p></div>
+          </div>
+        </div>
+
+        <div class="controls-grid">
+          <div><span class="key">W A S D</span><span>MOVE</span></div>
+          <div><span class="key">MOUSE</span><span>LOOK</span></div>
+          <div><span class="key">LMB</span><span>USE TOOL</span></div>
+          <div><span class="key">RMB</span><span>RECYCLE BLOCK</span></div>
+          <div><span class="key">SPACE</span><span>JUMP</span></div>
+          <div><span class="key">SHIFT</span><span>SPRINT</span></div>
+          <div><span class="key">1 – 7</span><span>TOOLS</span></div>
+          <div><span class="key">R</span><span>REBUILD CITY</span></div>
+        </div>
+
+        <button id="start-btn" class="start-btn">
+          <span class="btn-corner tl"></span><span class="btn-corner tr"></span>
+          <span class="btn-corner bl"></span><span class="btn-corner br"></span>
+          <span class="btn-label">ENTER SANDBOX</span>
+          <span class="btn-sub">CLICK TO LOCK MOUSE</span>
+        </button>
+
+        <div class="fineprint">
+          <span>100% REAL-TIME · NO PRE-BAKED COLLAPSE ANIMATIONS</span>
+          <span>DESKTOP + MOBILE</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="pause" class="overlay hidden">
+      <div class="overlay-bg blur"></div>
+      <div class="pause-card">
+        <div class="eyebrow">SIMULATION PAUSED</div>
+        <h2>TAKE A BREATH.</h2>
+        <p>The city isn't going anywhere. Yet.</p>
+        <button id="resume-btn" class="start-btn small">
+          <span class="btn-label">RESUME</span>
+          <span class="btn-sub">CLICK TO LOCK MOUSE</span>
+        </button>
+        <div class="pause-tip">Press <span class="key">R</span> to rebuild the demolition site from scratch.</div>
+      </div>
+    </div>
+
+    <div id="loader">
+      <div class="loader-inner">
+        <div class="loader-logo">COLLAPSE<span>LAB</span></div>
+        <div class="loader-bar"><i id="loader-fill"></i></div>
+        <div class="loader-text" id="loader-text">ASSEMBLING DEMOLITION SITE…</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
